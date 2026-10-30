@@ -1,0 +1,28 @@
+{
+  "_como": "Una entrada por gymkana. «fuente» es la carpeta con tarjetas.json (relativa a la carpeta del proyecto «claude medicina»); niveles_*.json y versiones.json se leen de ahí si existen. Se arma con: python3 herramientas/armar_gymkana.py <id>",
+  "anato2-c2": {
+    "titulo": "Gymkana del Certamen 2",
+    "ramo": "Anatomía II",
+    "periodo": "Segundo semestre 2026",
+    "fuente": "trabajo/2° Semestre/🦴 Anatomía II/Certamen 2/Gymkana",
+    "semanas": {
+      "S4": "Visión y audición",
+      "S5": "SMAS y cavidad nasal",
+      "S6": "ATM y cavidad oral",
+      "S7": "Topografía cervical y músculos del cuello",
+      "S8": "Espacios craneovertebral y visceral del cuello"
+    },
+    "regiones": {
+      "orbita": "Órbita",
+      "oido": "Oído",
+      "cara": "Cara",
+      "nasal": "Cavidad nasal",
+      "masticatorio": "Masticatorios y ATM",
+      "oral": "Cavidad oral",
+      "cuello": "Cuello y nuca",
+      "faringe": "Faringe",
+      "laringe": "Laringe",
+      "visceral": "Espacio visceral"
+    }
+  }
+}
