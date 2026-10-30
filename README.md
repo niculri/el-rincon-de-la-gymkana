@@ -38,6 +38,9 @@ imagen rearmada contra la original.
    nombran por su contenido, así que rearmar sin cambios no cambia ningún archivo.
 3. Prueba en local (`python3 -m http.server 8770`) y sube con `git add -A && git commit && git push`.
 
+Si cambias `app.js` o `estilos.css`, sube también el número `?v=` de los dos en `index.html`. GitHub Pages deja que el
+navegador guarde esos archivos 10 minutos, y sin el número nuevo alguien puede seguir viendo la versión anterior.
+
 Los niveles salen de `niveles*.json` («Extras»). La versión y la fecha de cada tarjeta salen de `versiones.json`, junto
 al `tarjetas.json`. El pie de cada tarjeta lleva su código, como en Anki («T-A2-G2-0001.1»).
 
