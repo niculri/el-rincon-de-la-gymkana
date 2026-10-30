@@ -16,6 +16,15 @@ const ICON = {
   lapiz: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16v4z"/><path d="M13 7l4 4"/></svg>',
 };
 
+/* ---------------------------------------------------------------- estadísticas (GoatCounter, sin cookies)
+   La página cuenta sola las visitas; esto agrega eventos para ver cuánta gente estudia de verdad. */
+function contar(evento, titulo, intento = 0) {
+  try {
+    if (window.goatcounter && window.goatcounter.count) window.goatcounter.count({ path: evento, title: titulo, event: true });
+    else if (intento < 20) setTimeout(() => contar(evento, titulo, intento + 1), 500);   // el script carga después
+  } catch (e) { /* sin estadísticas no pasa nada */ }
+}
+
 /* ---------------------------------------------------------------- almacenamiento */
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -150,6 +159,7 @@ async function enrutar() {
       G.id = id; G.meta = d; G.cartas = d.tarjetas; G.por = {}; G.regSem = {};
       for (const c of G.cartas) { G.por[c.c] = c; if (c.reg && !G.regSem[c.reg]) G.regSem[c.reg] = c.sem; }
       srs = LS.get(clave('srs'), {});
+      contar(`${id}/abrir`, `${g.ramo} · ${g.titulo}: abrir`);
     } catch (e) {
       $('#app').innerHTML = `<div class="wrap error">No se pudo cargar esta gymkana. Revisa la conexión y recarga la página.</div>`;
       return;
@@ -399,7 +409,7 @@ function portada() {
   $('#a-repasos').onchange = e => { LS.set(clave('ajustes'), { ...ajustesAnki(), repasos: +e.target.value }); portada(); restaurarScroll(); };
   const guardarCA = () => LS.set(clave('ajustesCA'), { n: +$('#c-n').value, seg: +$('#c-seg').value, corregir: $('#c-cor').value, falladas: $('#c-fall').checked });
   ['#c-n', '#c-seg', '#c-cor', '#c-fall'].forEach(s => ($(s).onchange = guardarCA));
-  $('#b-anki').onclick = () => { ultimoScroll = 0; anki(); };
+  $('#b-anki').onclick = () => { ultimoScroll = 0; contar(`${G.id}/anki`, `${G.meta.ramo} · ${G.meta.titulo}: modo Anki`); anki(); };
   $('#b-ca').onclick = () => { guardarCA(); nuevaRonda(); };
   if ($('#b-seguir')) {
     $('#b-seguir').onclick = () => ca();
@@ -688,6 +698,7 @@ async function nuevaRonda(cods) {
   }
   R = { id: 'r' + Date.now(), t: Date.now(), cods: barajar(pool), i: 0, res: [], seg: aj.seg, corregir: aj.corregir, filtros: cods ? 'repetir las malas' : resumenFiltros(filtros()), fin: false };
   guardarRonda();
+  contar(`${G.id}/ca`, `${G.meta.ramo} · ${G.meta.titulo}: ronda CA`);
   ca();
 }
 function guardarRonda() {
@@ -803,7 +814,11 @@ function cambiarCorreccion(i) {
 }
 function siguienteCA() {
   R.i++;
-  if (R.i >= R.cods.length) { R.fin = true; guardarRonda(); return resultadoCA(); }
+  if (R.i >= R.cods.length) {
+    R.fin = true; guardarRonda();
+    contar(`${G.id}/ca-terminada`, `${G.meta.ramo} · ${G.meta.titulo}: ronda CA terminada`);
+    return resultadoCA();
+  }
   guardarRonda();
   estacion();
 }
