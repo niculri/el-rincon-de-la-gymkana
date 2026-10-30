@@ -78,8 +78,9 @@ function fechaCL(iso) {
   const [a, m, d] = iso.split('-').map(Number);
   return `${d}-${m}-${a}`;
 }
-function pieCarta(c) {
-  return `<div class="pie-carta">Creado por Nico Ulriksen el ${fechaCL(c.cr)}${c.ac ? ' · actualizado el ' + fechaCL(c.ac) : ''} · T-${esc(c.c)}.${c.v}</div>`;
+// código de la tarjeta («T-A2-G2-0001.1»), justo bajo la fuente de la respuesta, para reportar errores
+function codigoHTML(c) {
+  return `<div class="codigo">T-${esc(c.c)}.${c.v}</div>`;
 }
 /* cara de una tarjeta como la plantilla de Anki: encabezado, imagen y, en el reverso, nombre, extra y fuente */
 function cartaHTML(c, reverso) {
@@ -88,6 +89,7 @@ function cartaHTML(c, reverso) {
     h += `<hr><div class="respuesta"><b>${esc(c.n)}</b></div>`;
     if (c.x) h += `<div class="extra">${esc(c.x)}</div>`;
     if (c.f) h += `<div class="fuente">${esc(c.f)}</div>`;
+    h += codigoHTML(c);
   }
   return h + '</div>';
 }
@@ -376,7 +378,7 @@ function portada() {
       <p class="nota" style="margin:0 0 10px">El avance vive en este navegador. Para pasarlo a otro dispositivo, baja la copia y cárgala allá.</p>
       <div class="acciones"><button class="btn2" id="b-bajar">Bajar copia</button><button class="btn2" id="b-cargar">Cargar copia</button><input type="file" id="f-cargar" accept="application/json,.json" hidden>
         <button class="txtbtn" id="b-borrar" style="margin-left:auto">Borrar todo mi avance</button></div></section>
-    <p class="pie-sitio">Hecho por Nico Ulriksen · ${esc(G.meta.ramo)}, ${esc((G.meta.periodo || '').toLowerCase())}. Cada estación lleva su código abajo a la derecha (T-…) para reportar errores.</p>
+    <p class="pie-sitio">Hecho por Nico Ulriksen · ${esc(G.meta.ramo)}, ${esc((G.meta.periodo || '').toLowerCase())}. Cada estación lleva su código bajo la fuente, en la respuesta (T-…), para reportar errores.</p>
   </div>`;
 
   // indeterminado en las semanas con algunas regiones
@@ -506,7 +508,7 @@ function siguienteAnki() {
 }
 function dibujarAnki() {
   const c = A.c;
-  $('#app').innerHTML = `<div class="wrap estudio">${cartaHTML(c, A.rev)}${pieCarta(c)}</div>`;
+  $('#app').innerHTML = `<div class="wrap estudio">${cartaHTML(c, A.rev)}</div>`;
   activarFiguras($('#app'));
   precargar([c]);
   if (!A.rev) {
@@ -735,7 +737,7 @@ function estacion() {
   } else if (mostrarSol) {
     h += veredictoHTML(r, c);
   }
-  h += `</div>${pieCarta(c)}</div>`;
+  h += `</div></div>`;
   $('#app').innerHTML = h;
   activarFiguras($('#app'));
   if (!respondida) {
@@ -772,7 +774,7 @@ function veredictoHTML(r, c) {
   return `<div class="veredicto ${bien ? 'bien' : 'mal'}"><span class="vi">${bien ? '✓' : '✗'}</span>${bien ? (r.manual ? 'Buena (la marcaste tú)' : r.p < 1 ? 'Buena, revisa la ortografía' : 'Buena') : r.manual ? 'Mala (la marcaste tú)' : r.agotado ? 'Se acabó el tiempo' : 'Mala'}</div>
     <div class="tuya">Escribiste: ${bien ? txt : `<s>${txt}</s>`}</div>
     <div class="cambiar"><button class="chico" id="b-cambiar">${bien ? 'Contarla como mala' : 'Contarla como buena'}</button></div>
-    <hr><div class="respuesta"><b>${esc(c.n)}</b></div>${c.x ? `<div class="extra">${esc(c.x)}</div>` : ''}${c.f ? `<div class="fuente">${esc(c.f)}</div>` : ''}`;
+    <hr><div class="respuesta"><b>${esc(c.n)}</b></div>${c.x ? `<div class="extra">${esc(c.x)}</div>` : ''}${c.f ? `<div class="fuente">${esc(c.f)}</div>` : ''}${codigoHTML(c)}`;
 }
 function statsCA(cod, delta) {
   const st = LS.get(clave('ca'), {});
