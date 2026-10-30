@@ -282,8 +282,9 @@ function anotar(e) {
     const i = h.findIndex(x => x.modo === 'anki' && x.dia === e.dia);
     if (i >= 0) h.splice(i, 1);
   } else {
+    // una ronda que ya estaba (seguir respondiendo, cambiar una corrección) se queda en su lugar del historial
     const i = h.findIndex(x => x.id && x.id === e.id);
-    if (i >= 0) h.splice(i, 1);
+    if (i >= 0) { h[i] = e; LS.set(clave('hist'), h); return; }
   }
   h.unshift(e);
   LS.set(clave('hist'), h.slice(0, 300));
@@ -308,7 +309,9 @@ function portada() {
   const f = filtros(), sel = seleccion(f);
   const q = colaAnki(f), est = contarEstados(sel);
   const cnt = (pred) => G.cartas.filter(pred).length;
-  const ronda = LS.get(clave('ronda'), null);
+  archivarTerminada();
+  const ronda = aMedias();
+  const hechas = new Set(rondasHechas().map(r => r.id));
   const ajA = ajustesAnki(), ajC = { n: 20, seg: 0, corregir: 'al_instante', falladas: false, ...LS.get(clave('ajustesCA'), {}) };
   const hist = historial();
   const stats = LS.get(clave('ca'), {});
@@ -327,7 +330,7 @@ function portada() {
     <p class="kicker">${esc(G.meta.ramo)} · ${esc(G.meta.periodo || '')}</p>
     <h1>${esc(G.meta.titulo)}</h1>
     <p class="lead">${fmtN(G.cartas.length)} estaciones con fotos de preparados. Elige qué estudiar y en qué modo.</p>
-    ${ronda && !ronda.fin ? `<div class="seguir"><div class="sg-t"><b>Tienes una ronda del modo CA a medias</b><span>Estación ${ronda.i + 1} de ${ronda.cods.length} · ${ronda.res.filter(r => r && r.ok).length} buenas</span></div>
+    ${ronda ? `<div class="seguir"><div class="sg-t"><b>Tienes una ronda del modo CA a medias</b><span>Estación ${ronda.i + 1} de ${ronda.cods.length} · ${ronda.res.filter(r => r && r.ok).length} buenas</span></div>
       <div class="acciones"><button class="btn" id="b-seguir">Continuar</button><button class="btn2" id="b-descartar">Descartar</button></div></div>` : ''}
 
     <fieldset class="sec"><legend>Semanas y regiones</legend><div class="semanas">${semanasHTML}</div></fieldset>
@@ -366,7 +369,7 @@ function portada() {
     <section class="sec"><h2 class="subt">Historial</h2>
       <ul class="hist">${hist.length ? hist.slice(0, 30).map(h => h.modo === 'anki'
         ? `<li><span class="hf">${fechaHora(h.t)}</span><span class="hm">Modo Anki</span><span class="hd">${fmtN(h.n)} respuestas · ${h.n ? Math.round(100 * (h.n - h.otra) / h.n) : 0} % sin «Otra vez» · ${fmtN(h.nuevas)} nuevas · ${duracion(h.ms)}</span></li>`
-        : `<li><span class="hf">${fechaHora(h.t)}</span><span class="hm">Modo CA</span><span class="hd">${h.buenas}/${h.total} buenas (${Math.round(100 * h.buenas / h.total)} %)${h.fin ? '' : ' · a medias'} · ${esc(h.filtros)}</span></li>`).join('')
+        : `<li><span class="hf">${fechaHora(h.t)}</span><span class="hm">Modo CA</span><span class="hd">${h.buenas}/${h.total} buenas (${Math.round(100 * h.buenas / h.total)} %)${h.fin ? '' : ' · a medias'} · ${esc(h.filtros)}</span>${hechas.has(h.id) ? `<button class="chico" data-ronda="${esc(h.id)}">Ver respuestas</button>` : ''}</li>`).join('')
         : '<li class="vacio">Todavía no has estudiado. Aquí van a quedar tus sesiones del modo Anki (una por día) y tus rondas del modo CA.</li>'}</ul></section>
 
     <section class="sec"><h2 class="subt">Copia de tu avance</h2>
@@ -395,23 +398,25 @@ function portada() {
   const guardarCA = () => LS.set(clave('ajustesCA'), { n: +$('#c-n').value, seg: +$('#c-seg').value, corregir: $('#c-cor').value, falladas: $('#c-fall').checked });
   ['#c-n', '#c-seg', '#c-cor', '#c-fall'].forEach(s => ($(s).onchange = guardarCA));
   $('#b-anki').onclick = () => { ultimoScroll = 0; anki(); };
-  $('#b-ca').onclick = async () => {
-    guardarCA();
-    if (ronda && !ronda.fin && !(await confirmar('¿Empezar una ronda nueva?', 'Tienes una ronda a medias. Si empiezas otra, esa queda en el historial como está.', 'Empezar otra'))) return;
-    nuevaRonda();
-  };
+  $('#b-ca').onclick = () => { guardarCA(); nuevaRonda(); };
   if ($('#b-seguir')) {
     $('#b-seguir').onclick = () => ca();
     $('#b-descartar').onclick = async () => {
-      if (await confirmar('¿Descartar la ronda?', 'Queda en el historial con lo que alcanzaste a responder.', 'Descartar')) { LS.del(clave('ronda')); portada(); }
+      if (await confirmar('¿Descartar la ronda?', 'Se borran la ronda y su entrada del historial.', 'Descartar')) { borrarRonda(ronda); portada(); }
     };
   }
+  app.querySelectorAll('[data-ronda]').forEach(b => (b.onclick = () => {
+    const r = rondasHechas().find(x => x.id === b.dataset.ronda);
+    if (!r) return;
+    R = r;
+    resultadoCA();
+  }));
   $('#b-bajar').onclick = bajarCopia;
   $('#b-cargar').onclick = () => $('#f-cargar').click();
   $('#f-cargar').onchange = e => cargarCopia(e.target.files[0]);
   $('#b-borrar').onclick = async () => {
-    if (!(await confirmar('¿Borrar todo tu avance?', 'Se borran la repetición espaciada, el historial y las estadísticas de esta gymkana en este navegador. No se puede deshacer; si quieres, baja antes una copia.', 'Borrar todo'))) return;
-    for (const k of ['srs', 'hist', 'ronda', 'dia', 'ca']) LS.del(clave(k));
+    if (!(await confirmar('¿Borrar todo tu avance?', 'Se borran la repetición espaciada, el historial, las rondas guardadas y las estadísticas de esta gymkana en este navegador. No se puede deshacer; si quieres, baja antes una copia.', 'Borrar todo'))) return;
+    for (const k of ['srs', 'hist', 'ronda', 'rondas', 'dia', 'ca']) LS.del(clave(k));
     srs = {}; portada();
   };
 }
@@ -421,7 +426,7 @@ function restaurarScroll() { window.scrollTo(0, ultimoScroll); }
 
 function bajarCopia() {
   const datos = { gymkana: G.id, fecha: new Date().toISOString() };
-  for (const k of ['srs', 'hist', 'ronda', 'dia', 'ca', 'filtros', 'ajustes', 'ajustesCA']) datos[k] = LS.get(clave(k), null);
+  for (const k of ['srs', 'hist', 'ronda', 'rondas', 'dia', 'ca', 'filtros', 'ajustes', 'ajustesCA']) datos[k] = LS.get(clave(k), null);
   const blob = new Blob([JSON.stringify(datos)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -435,7 +440,7 @@ async function cargarCopia(file) {
   try { d = JSON.parse(await file.text()); } catch (e) { await confirmar('No se pudo leer el archivo', 'No es una copia del avance de El Rincón de la Gymkana.', 'Entendido', 'Cerrar'); return; }
   if (d.gymkana !== G.id) { await confirmar('Esa copia es de otra gymkana', `El archivo es de «${esc(d.gymkana)}». Ábrelo desde esa gymkana.`, 'Entendido', 'Cerrar'); return; }
   if (!(await confirmar('¿Cargar esta copia?', `Reemplaza tu avance de este navegador por el de la copia del ${fechaHora(d.fecha)}.`, 'Cargar'))) return;
-  for (const k of ['srs', 'hist', 'ronda', 'dia', 'ca', 'filtros', 'ajustes', 'ajustesCA']) {
+  for (const k of ['srs', 'hist', 'ronda', 'rondas', 'dia', 'ca', 'filtros', 'ajustes', 'ajustesCA']) {
     if (d[k] == null) LS.del(clave(k)); else LS.set(clave(k), d[k]);
   }
   srs = LS.get(clave('srs'), {});
@@ -641,7 +646,25 @@ const UMBRAL_BIEN = 0.9;
 /* ---------------------------------------------------------------- modo CA: ronda */
 let R = null, reloj = null;
 function barajar(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function nuevaRonda(cods) {
+/* La ronda en curso va en «ronda»; al terminar pasa a «rondas» (las 50 últimas, con lo que se escribió en cada
+   estación) para revisarla desde el historial. Empezar otra o descartar borra la que estaba a medias. */
+const MAX_RONDAS = 50;
+function rondasHechas() { return LS.get(clave('rondas'), []); }
+function aMedias() { const r = LS.get(clave('ronda'), null); return r && !r.fin ? r : null; }
+function archivarTerminada() {        // una ronda terminada que quedó en «ronda» (versiones anteriores de la página)
+  const r = LS.get(clave('ronda'), null);
+  if (!r || !r.fin) return;
+  const rs = rondasHechas();
+  if (!rs.some(x => x.id === r.id)) LS.set(clave('rondas'), [r, ...rs].sort((a, b) => b.t - a.t).slice(0, MAX_RONDAS));
+  LS.del(clave('ronda'));
+}
+// borra una ronda a medias: la ronda, su entrada del historial y lo que sumó a «las que más fallas»
+function borrarRonda(r) {
+  r.res.forEach((x, i) => { if (x) statsCA(r.cods[i], [-1, x.ok ? -1 : 0]); });
+  LS.set(clave('hist'), historial().filter(h => h.id !== r.id));
+  LS.del(clave('ronda'));
+}
+async function nuevaRonda(cods) {
   const aj = { n: 20, seg: 0, corregir: 'al_instante', falladas: false, ...LS.get(clave('ajustesCA'), {}) };
   let pool;
   if (cods) pool = cods.slice();
@@ -655,20 +678,31 @@ function nuevaRonda(cods) {
     if (aj.n) pool = pool.slice(0, aj.n);
   }
   if (!pool.length) { confirmar('No hay estaciones', aj.falladas ? 'No has fallado ninguna estación de lo seleccionado en el modo CA.' : 'Selecciona al menos una semana o región.', 'Entendido', 'Cerrar'); return; }
-  R = { id: 'r' + Date.now(), t: Date.now(), cods: barajar(pool), i: 0, res: [], seg: aj.seg, corregir: aj.corregir, filtros: cods ? 'repetir las malas' : resumenFiltros(filtros()), fin: false, vista: false };
+  const vieja = aMedias();
+  if (vieja) {
+    const nResp = vieja.res.filter(Boolean).length;
+    if (!(await confirmar('¿Empezar una ronda nueva?', `Tienes una ronda a medias (${nResp} de ${vieja.cods.length} estaciones respondidas). Si empiezas otra, esa se borra.`, 'Borrarla y empezar'))) return;
+    borrarRonda(vieja);
+  }
+  R = { id: 'r' + Date.now(), t: Date.now(), cods: barajar(pool), i: 0, res: [], seg: aj.seg, corregir: aj.corregir, filtros: cods ? 'repetir las malas' : resumenFiltros(filtros()), fin: false };
   guardarRonda();
   ca();
 }
 function guardarRonda() {
-  LS.set(clave('ronda'), R);
+  if (R.fin) {
+    const { borrador, restante, ...limpia } = R;
+    const rs = rondasHechas().filter(x => x.id !== R.id);
+    LS.set(clave('rondas'), [limpia, ...rs].sort((a, b) => b.t - a.t).slice(0, MAX_RONDAS));
+    const cur = LS.get(clave('ronda'), null);
+    if (cur && cur.id === R.id) LS.del(clave('ronda'));
+  } else LS.set(clave('ronda'), R);
   const resp = R.res.filter(Boolean);
   if (resp.length) anotar({ modo: 'ca', id: R.id, t: R.t, buenas: resp.filter(r => r.ok).length, total: R.fin ? R.cods.length : resp.length, filtros: R.filtros, fin: R.fin });
 }
 function ca() {
   vista = ca;
-  if (!R) R = LS.get(clave('ronda'), null);
+  if (!R) R = aMedias();
   if (!R) return portada();
-  R.cods = R.cods.filter(k => G.por[k]);
   if (R.fin || R.i >= R.cods.length) return resultadoCA();
   estacion();
 }
@@ -690,6 +724,7 @@ function estacion() {
   pararReloj();
   window.scrollTo(0, 0);
   const c = G.por[R.cods[R.i]], r = R.res[R.i];
+  if (!c) return siguienteCA();   // una estación que ya no está en la gymkana
   precargar(R.cods.slice(R.i, R.i + 4).map(k => G.por[k]));
   const respondida = !!r;
   const mostrarSol = respondida && R.corregir === 'al_instante';
@@ -776,7 +811,7 @@ function resultadoCA() {
   teclas = null;
   window.scrollTo(0, 0);
   $('#abajo').innerHTML = '';
-  const res = R.cods.map((k, i) => ({ c: G.por[k], r: R.res[i] || { txt: '', ok: false, p: 0 } , i }));
+  const res = R.cods.map((k, i) => ({ c: G.por[k], r: R.res[i] || { txt: '', ok: false, p: 0 }, i })).filter(x => x.c);
   const b = res.filter(x => x.r.ok).length, n = res.length, pc = n ? Math.round(100 * b / n) : 0;
   barra({ titulo: `${esc(G.meta.ramo)} · Resultado`, acciones: `<button class="hbtn" id="b-ini">${ICON.casa}<span>Inicio</span></button>`, progreso: 1 });
   $('#b-ini').onclick = () => { R = null; portada(); };
@@ -785,7 +820,7 @@ function resultadoCA() {
     <div class="rt">${x.r.txt.trim() ? 'Escribiste: ' + (x.r.ok ? esc(x.r.txt) : `<s>${esc(x.r.txt)}</s>`) : 'Sin respuesta'}${x.r.manual ? ' · corrección tuya' : ''}</div>
     <div class="rc">Estación ${x.i + 1} · T-${esc(x.c.c)}.${x.c.v}</div>
     <div class="rb"><button class="chico" data-cambiar="${x.i}">${x.r.ok ? 'Contarla como mala' : 'Contarla como buena'}</button></div></div></div>`;
-  $('#app').innerHTML = `<div class="wrap res"><p class="kicker">Modo CA · ${esc(R.filtros)}</p><h1>${b} de ${n} buenas</h1>
+  $('#app').innerHTML = `<div class="wrap res"><p class="kicker">Modo CA · ${fechaHora(R.t)} · ${esc(R.filtros)}</p><h1>${b} de ${n} buenas</h1>
     <div class="marcador"><div class="mcell g"><div class="n">${b}</div><div class="l">buenas</div></div><div class="mcell r"><div class="n">${n - b}</div><div class="l">malas</div></div><div class="mcell p"><div class="n">${pc} %</div><div class="l">de la ronda</div></div></div>
     <div class="barra" aria-hidden="true"><i style="width:${pc}%"></i></div>
     <div class="acciones" style="margin-top:22px">${malas.length ? `<button class="btn" id="b-malas">Repetir las ${malas.length} malas</button>` : ''}<button class="btn2" id="b-otra">Nueva ronda</button><button class="btn2" id="b-volver">Volver al inicio</button></div>

@@ -236,3 +236,4 @@ select,input[type=number]{font:inherit;font-size:14px;background:var(--surf);col
 .chico{font-size:13px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--line);background:var(--surf);font-weight:600}
 .chico:hover{border-color:var(--ac)}
 @media (max-width:480px){.rv{grid-template-columns:88px minmax(0,1fr)}}
+.hist li .chico{margin-left:auto;align-self:center}
