@@ -160,6 +160,9 @@ async function enrutar() {
 function inicio() {
   barra();
   vista = inicio;
+  teclas = null;
+  pararReloj();
+  $('#abajo').innerHTML = '';
   $('#app').innerHTML = `<div class="wrap portada">
     <p class="kicker">Anatomía · Medicina U. de Chile</p>
     <h1>El Rincón de la Gymkana</h1>
@@ -298,6 +301,8 @@ function duracion(ms) {
 function portada() {
   vista = portada;
   teclas = null;
+  pararReloj();
+  $('#abajo').innerHTML = '';   // la barra de abajo de Anki o del modo CA no sigue en la portada
   window.scrollTo(0, 0);
   barra({ titulo: esc(G.meta.ramo) });
   const f = filtros(), sel = seleccion(f);
