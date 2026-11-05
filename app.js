@@ -176,14 +176,14 @@ function inicio() {
   pararReloj();
   $('#abajo').innerHTML = '';
   $('#app').innerHTML = `<div class="wrap portada">
-    <p class="kicker">Anatomía · Medicina U. de Chile</p>
+    <p class="kicker">Medicina U. de Chile</p>
     <h1>El Rincón de la Gymkana</h1>
-    <p class="lead">Las fotos de preparados de cada gymkana, con sus alfileres. Estúdialas como en Anki o pruébate como en la gymkana, escribiendo el nombre de cada estación. Tu avance queda guardado en este navegador.</p>
+    <p class="lead">Las imágenes de los preparados de cada gymkana, con su marca. Estúdialas como en Anki o pruébate como en la gymkana, escribiendo el nombre de cada estación. Tu avance queda guardado en este navegador.</p>
     <div class="lista">${INDICE.map(g => `<button class="gk" data-id="${esc(g.id)}">
       <span class="gi"><span class="gr">${esc(g.ramo)}</span><span class="gt" style="display:block">${esc(g.titulo)}</span>
       <span class="gs" style="display:block">${fmtN(g.tarjetas)} estaciones · ${fmtN(g.tarjetas - g.extras)} esenciales y ${fmtN(g.extras)} extras · ${esc(g.periodo)}</span></span>
       <span class="gf" aria-hidden="true">→</span></button>`).join('')}</div>
-    <p class="pie-sitio">Hecho por Nico Ulriksen. Fotos de morfogym.cl, Yokochi (<i>Atlas fotográfico de anatomía</i>, 8.ª ed.) y ComprehensiveCadaver, con los nombres en castellano.</p>
+    <p class="pie-sitio">Hecho por Nico Ulriksen. Anatomía: fotos de morfogym.cl, Yokochi (<i>Atlas fotográfico de anatomía</i>, 8.ª ed.) y ComprehensiveCadaver. Embriología: <i>Atlas de embriología humana</i> de Rojas, Prieto y Ottone, placas de la microscopía virtual del curso (apunte PAD), Ross y Netter. Con los nombres en castellano.</p>
   </div>`;
   document.querySelectorAll('.gk').forEach(b => (b.onclick = () => irA(b.dataset.id)));
 }
@@ -341,16 +341,16 @@ function portada() {
   $('#app').innerHTML = `<div class="wrap portada">
     <p class="kicker">${esc(G.meta.ramo)} · ${esc(G.meta.periodo || '')}</p>
     <h1>${esc(G.meta.titulo)}</h1>
-    <p class="lead">${fmtN(G.cartas.length)} estaciones con fotos de preparados. Elige qué estudiar y en qué modo.</p>
+    <p class="lead">${fmtN(G.cartas.length)} estaciones con ${esc(G.meta.imagenes || "fotos de preparados")}. Elige qué estudiar y en qué modo.</p>
     ${ronda ? `<div class="seguir"><div class="sg-t"><b>Tienes una ronda del modo CA a medias</b><span>Estación ${ronda.i + 1} de ${ronda.cods.length} · ${ronda.res.filter(r => r && r.ok).length} buenas</span></div>
       <div class="acciones"><button class="btn" id="b-seguir">Continuar</button><button class="btn2" id="b-descartar">Descartar</button></div></div>` : ''}
 
-    <fieldset class="sec"><legend>Semanas y regiones</legend><div class="semanas">${semanasHTML}</div></fieldset>
-    <fieldset class="sec"><legend>Fuente de las fotos</legend><div class="pills">${FUENTES().map(s => pill('src', s, esc(s), cnt(c => c.src === s), f.src.includes(s))).join('')}</div></fieldset>
+    <fieldset class="sec"><legend>${esc(G.meta.nombre_grupos || "Semanas y regiones")}</legend><div class="semanas">${semanasHTML}</div></fieldset>
+    <fieldset class="sec"><legend>Fuente de las imágenes</legend><div class="pills">${FUENTES().map(s => pill('src', s, esc(s), cnt(c => c.src === s), f.src.includes(s))).join('')}</div></fieldset>
     <fieldset class="sec"><legend>Nivel</legend><div class="pills">
       ${pill('nivel', 'esencial', 'Esenciales', cnt(c => !c.xt), f.nivel.includes('esencial'))}
       ${pill('nivel', 'extra', 'Extras', cnt(c => c.xt), f.nivel.includes('extra'))}</div>
-      <p class="nota" style="margin:8px 0 0">Extras: cada estructura ya tiene hasta tres vistas en las esenciales; estas son las demás, como el submazo «Extras» de Anki.</p></fieldset>
+      <p class="nota" style="margin:8px 0 0">${esc(G.meta.nota_extras || "Extras: cada estructura ya tiene hasta tres vistas en las esenciales; estas son las demás, como el submazo «Extras» de Anki.")}</p></fieldset>
     <div class="resumen"><b>${fmtN(sel.length)}</b><span>estaciones seleccionadas</span>
       <button class="txtbtn" id="b-todo">Seleccionar todo</button><button class="txtbtn" id="b-nada">Quitar todo</button></div>
 
@@ -362,7 +362,7 @@ function portada() {
           <label for="a-repasos">Repasos por día</label><select id="a-repasos">${[100, 200, 500, 9999].map(v => `<option value="${v}" ${ajA.repasos === v ? 'selected' : ''}>${v === 9999 ? 'Sin límite' : v}</option>`).join('')}</select></div>
         <button class="btn" id="b-anki" ${sel.length ? '' : 'disabled'}>Estudiar</button></section>
       <section class="modo"><h2><span class="ic">${ICON.lapiz}</span>Modo CA</h2>
-        <p>Como en la gymkana: cada estación muestra la foto con el alfiler y tú escribes el nombre. Se corrige solo y puedes cambiar la corrección.</p>
+        <p>Como en la gymkana: cada estación muestra ${esc(G.meta.marca || "la foto con el alfiler")} y tú escribes el nombre. Se corrige solo y puedes cambiar la corrección.</p>
         <div class="ajustes"><label for="c-n">Estaciones</label><select id="c-n">${[10, 20, 30, 50, 100, 0].map(v => `<option value="${v}" ${ajC.n === v ? 'selected' : ''}>${v || 'Todas las seleccionadas'}</option>`).join('')}</select>
           <label for="c-seg">Tiempo</label><select id="c-seg">${[0, 30, 45, 60, 90].map(v => `<option value="${v}" ${ajC.seg === v ? 'selected' : ''}>${v ? v + ' s por estación' : 'Sin límite'}</option>`).join('')}</select>
           <label for="c-cor">Corrección</label><select id="c-cor"><option value="al_instante" ${ajC.corregir === 'al_instante' ? 'selected' : ''}>En cada estación</option><option value="al_final" ${ajC.corregir === 'al_final' ? 'selected' : ''}>Al final, como en la prueba</option></select></div>
@@ -623,8 +623,19 @@ function compararPalabras(r, a) {
 function alternativas(nombre) {
   const alts = [];
   const sinPar = nombre.replace(/\([^)]*\)/g, ' ');
-  alts.push(...sinPar.split(/\s\/\s|;/));
-  for (const m of nombre.matchAll(/\(([^)]*)\)/g)) alts.push(...m[1].split(/,|\so\s/));
+  for (const s of sinPar.split(/\s\/\s|;|:/)) {
+    alts.push(s);
+    // «Mesodermo somítico o paraxial» → también «Mesodermo somítico» y «Mesodermo paraxial»
+    const m = s.match(/^(.*\s)?(\S+)\so\s(\S+)\s*$/);
+    if (m) alts.push((m[1] || '') + m[2], (m[1] || '') + m[3]);
+    // «Macrófago o célula de Hofbauer» → también cada lado entero
+    const o = s.split(/\so\s/);
+    if (o.length === 2 && o[1].trim().split(/\s+/).length > 1) alts.push(...o);
+  }
+  // sinónimos entre paréntesis; no las siglas de una lámina («Notocorda (N)», «Pelvis renal (prn)», «(1)»), que en el
+  // examen nadie escribe: una sola palabra de hasta 4 caracteres no cuenta como respuesta
+  for (const m of nombre.matchAll(/\(([^)]*)\)/g))
+    alts.push(...m[1].split(/,|\so\s/).filter(s => /\s/.test(s.trim()) || s.trim().length > 4));
   return alts.map(normalizar).filter(a => a.length);
 }
 function lev(a, b) {

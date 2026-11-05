@@ -189,7 +189,8 @@ def main():
     (nuevo / "img").mkdir(parents=True)
     for h, b in archivos.items():
         (nuevo / "img" / f"{h}.webp").write_bytes(b)
-    meta = {k: conf[k] for k in ("titulo", "ramo", "periodo", "semanas", "regiones") if k in conf}
+    meta = {k: conf[k] for k in ("titulo", "ramo", "periodo", "semanas", "regiones", "nombre_grupos", "imagenes",
+                                  "marca", "nota_extras") if k in conf}
     (nuevo / "datos.json").write_text(json.dumps({**meta, "tarjetas": salida}, ensure_ascii=False,
                                                  separators=(",", ":")))
     shutil.rmtree(destino, ignore_errors=True)

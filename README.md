@@ -1,6 +1,6 @@
 # El Rincón de la Gymkana
 
-Gymkanas de anatomía (Medicina, Universidad de Chile) para estudiar en el navegador, en el computador o en el teléfono.
+Gymkanas de anatomía y de embriología (Medicina, Universidad de Chile) para estudiar en el navegador, en el computador o en el teléfono.
 Cada gymkana es un mazo de Anki con fotos de preparados: la foto con un alfiler (o una flecha o una bandera) y la
 misma foto con el nombre de la estructura.
 
@@ -20,6 +20,18 @@ Hecho por Nico Ulriksen.
 | id | Gymkana | Estaciones |
 |---|---|---|
 | `anato2-c2` | Anatomía II · Certamen 2 (S4–S8) | 3.317 (1.519 esenciales y 1.798 extras) |
+| `histo-c2` | Histología y embriología · Certamen 2, identificar embriones (clases 14–21 sin respiratorio, TP 9 y 10) | ver `gymkanas/indice.json` |
+
+## Embriología (`histo-c2`)
+Sale de los mazos de Anki del Certamen 2 de Histología y embriología: las tarjetas de imagen (siglas del atlas de Rojas,
+Prieto y Ottone) y las oclusiones de cortes reales (placas EOL del curso y algunas de las clases), una estación por
+máscara. Solo cortes, microscopía y fotos; ningún esquema. El `tarjetas.json` lo escribe
+`trabajo/…/Certamen 2/Gymkana de embriología/armar_estaciones.py` a partir de los `.apkg`, con el mismo código, versión
+y nivel que en Anki (las estaciones de una oclusión llevan el código de la nota y «/N», el número de la máscara). Si un
+mazo cambia: correr ese script y después `armar_gymkana.py histo-c2`.
+
+En `gymkanas.json`, `nombre_grupos`, `imagenes`, `marca` y `nota_extras` cambian los textos de la portada de una
+gymkana (por defecto, los de anatomía).
 
 ## Cómo se agrega o actualiza una gymkana
 Las fotos no se suben tal cual: el mazo del Certamen 2 pesa 630 MB y aquí ocupa ~100 MB.
