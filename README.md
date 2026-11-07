@@ -20,7 +20,15 @@ Hecho por Nico Ulriksen.
 | id | Gymkana | Estaciones |
 |---|---|---|
 | `anato2-c2` | Anatomía II · Certamen 2 (S4–S8) | 3.317 (1.519 esenciales y 1.798 extras) |
-| `histo-c2` | Histología y embriología · Certamen 2, identificar embriones (clases 14–21 sin respiratorio, TP 9 y 10) | ver `gymkanas/indice.json` |
+| `histo-c2` | Histología y embriología · Certamen 2, identificar embriones (TP 9 y 10, placas EOL y prácticos anteriores) | ver `gymkanas/indice.json` |
+
+## Portada por ramo y tests
+La portada muestra un botón por ramo (Anatomía, Histología). Cada ramo tiene su página (`#ramo-anatomia`,
+`#ramo-histologia`) con sus gymkanas y sus **tests**. Un test es una página aparte en `tests/<id>/index.html`, hecha con
+la skill `pauta-a-test`, y se anota en `tests/indice.json` (`id`, `titulo`, `ramo`, `periodo`, `url`, `preguntas`,
+`detalle`). El de embriología del Certamen 2 (`tests/histo-c2/`) lo copia
+`trabajo/…/Certamen 2/Test - Certámenes anteriores de embriología/publicar_rincon.py`, que le agrega el enlace
+«← Histología».
 
 ## Embriología (`histo-c2`)
 Sale de los mazos de Anki del Certamen 2 de Histología y embriología: las tarjetas de imagen (siglas del atlas de Rojas,
@@ -28,7 +36,9 @@ Prieto y Ottone) y las oclusiones de cortes reales (placas EOL del curso y algun
 máscara. Solo cortes, microscopía y fotos; ningún esquema. El `tarjetas.json` lo escribe
 `trabajo/…/Certamen 2/Gymkana de embriología/armar_estaciones.py` a partir de los `.apkg`, con el mismo código, versión
 y nivel que en Anki (las estaciones de una oclusión llevan el código de la nota y «/N», el número de la máscara). Si un
-mazo cambia: correr ese script y después `armar_gymkana.py histo-c2`.
+mazo cambia: correr ese script y después `armar_gymkana.py histo-c2`. Las estaciones del grupo «Prácticos anteriores»
+(códigos `HE-C2-GPA-…`, placas de prácticos de años anteriores) no están en Anki: las arma y revisa
+`Gymkana de embriología/pautas anteriores/armar_pautas.py`.
 
 En `gymkanas.json`, `nombre_grupos`, `imagenes`, `marca` y `nota_extras` cambian los textos de la portada de una
 gymkana (por defecto, los de anatomía).

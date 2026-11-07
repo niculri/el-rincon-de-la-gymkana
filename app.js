@@ -149,6 +149,7 @@ async function enrutar() {
     try { INDICE = await (await fetch('gymkanas/indice.json', { cache: 'no-cache' })).json(); }
     catch (e) { $('#app').innerHTML = `<div class="wrap error">No se pudo leer la lista de gymkanas. Revisa la conexión y recarga la página.</div>`; return; }
   }
+  if (id.startsWith('ramo-')) return paginaRamo(id.slice(5));
   const g = INDICE.find(x => x.id === id);
   if (!g) return inicio();
   if (G.id !== id) {
@@ -168,24 +169,72 @@ async function enrutar() {
   portada();
 }
 
-/* ---------------------------------------------------------------- inicio */
-function inicio() {
+/* ---------------------------------------------------------------- inicio
+   Portada: un botón grande por ramo → página del ramo (#ramo-<slug>) con sus gymkanas (#<id>) y sus tests (página
+   aparte, tests/<id>/, hecha con pauta-a-test; la lista está en tests/indice.json). */
+let TESTS = null;
+const RAMOS = {
+  'Anatomía II': { slug: 'anatomia', corto: 'Anatomía', lema: 'Fotos de preparados, Yokochi y modelos 3D',
+    icono: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 10c-3 0-5 2-5 5s2 4 4 4c0 0 2 0 3 2l16 16c2 1 2 3 2 3 0 2 1 4 4 4s5-2 5-5-2-4-4-4c0 0-2 0-3-2L20 17c-2-1-2-3-2-3 0-2-1-4-4-4z"/><circle cx="12" cy="13" r="1.4" fill="currentColor"/></svg>' },
+  'Histología y embriología': { slug: 'histologia', corto: 'Histología', lema: 'Cortes al microscopio y el teórico de embriología',
+    icono: '<svg viewBox="0 0 48 48" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="24" cy="24" r="16"/><circle cx="19" cy="20" r="4"/><circle cx="29" cy="19" r="3"/><circle cx="27" cy="29" r="4.5"/><circle cx="17" cy="30" r="2.5"/></svg>' },
+};
+const infoRamo = r => RAMOS[r] || { slug: r.toLowerCase().normalize('NFD').replace(/[^a-z]/g, ''), corto: r, lema: '', icono: ICON.pin };
+async function cargarTests() {
+  if (TESTS === null) {
+    try { TESTS = await (await fetch('tests/indice.json', { cache: 'no-cache' })).json(); } catch (e) { TESTS = []; }
+  }
+  return [...INDICE.map(g => ({ ...g, tipo: 'gymkana' })), ...TESTS.map(x => ({ ...x, tipo: 'test' }))];
+}
+const PIE_SITIO = `<p class="pie-sitio">Hecho por Nico Ulriksen. Anatomía: fotos de morfogym.cl, Yokochi (<i>Atlas fotográfico de anatomía</i>, 8.ª ed.) y ComprehensiveCadaver. Embriología: <i>Atlas de embriología humana</i> de Rojas, Prieto y Ottone, placas de la microscopía virtual del curso (apunte PAD), Ross y Netter. Con los nombres en castellano.</p>`;
+async function inicio() {
   barra();
   vista = inicio;
   teclas = null;
   pararReloj();
   $('#abajo').innerHTML = '';
+  const items = await cargarTests();
+  const ramos = [...new Set(items.map(x => x.ramo))];
+  const cuenta = r => {
+    const g = items.filter(x => x.ramo === r && x.tipo === 'gymkana').length, t = items.filter(x => x.ramo === r && x.tipo === 'test').length;
+    return [g ? `${g} gymkana${g > 1 ? 's' : ''}` : '', t ? `${t} test${t > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · ');
+  };
   $('#app').innerHTML = `<div class="wrap portada">
     <p class="kicker">Medicina U. de Chile</p>
     <h1>El Rincón de la Gymkana</h1>
-    <p class="lead">Las imágenes de los preparados de cada gymkana, con su marca. Estúdialas como en Anki o pruébate como en la gymkana, escribiendo el nombre de cada estación. Tu avance queda guardado en este navegador.</p>
-    <div class="lista">${INDICE.map(g => `<button class="gk" data-id="${esc(g.id)}">
-      <span class="gi"><span class="gr">${esc(g.ramo)}</span><span class="gt" style="display:block">${esc(g.titulo)}</span>
-      <span class="gs" style="display:block">${fmtN(g.tarjetas)} estaciones · ${fmtN(g.tarjetas - g.extras)} esenciales y ${fmtN(g.extras)} extras · ${esc(g.periodo)}</span></span>
-      <span class="gf" aria-hidden="true">→</span></button>`).join('')}</div>
-    <p class="pie-sitio">Hecho por Nico Ulriksen. Anatomía: fotos de morfogym.cl, Yokochi (<i>Atlas fotográfico de anatomía</i>, 8.ª ed.) y ComprehensiveCadaver. Embriología: <i>Atlas de embriología humana</i> de Rojas, Prieto y Ottone, placas de la microscopía virtual del curso (apunte PAD), Ross y Netter. Con los nombres en castellano.</p>
+    <p class="lead">Las imágenes de los preparados de cada gymkana, con su marca, y tests para practicar el teórico. Elige tu ramo.</p>
+    <div class="ramos">${ramos.map(r => { const i = infoRamo(r); return `<a class="ramo" href="#ramo-${i.slug}">
+      <span class="ri">${i.icono}</span><span class="rn">${esc(i.corto)}</span><span class="rl">${esc(i.lema)}</span><span class="rc">${cuenta(r)}</span></a>`; }).join('')}</div>
+    ${PIE_SITIO}
   </div>`;
-  document.querySelectorAll('.gk').forEach(b => (b.onclick = () => irA(b.dataset.id)));
+}
+async function paginaRamo(slug) {
+  barra();
+  vista = () => paginaRamo(slug);
+  teclas = null;
+  pararReloj();
+  $('#abajo').innerHTML = '';
+  const items = await cargarTests();
+  const r = [...new Set(items.map(x => x.ramo))].find(x => infoRamo(x).slug === slug);
+  if (!r) return inicio();
+  barra({ titulo: esc(r) });
+  const tarjeta = x => x.tipo === 'gymkana'
+    ? `<button class="gk" data-id="${esc(x.id)}"><span class="gi"><span class="gr">Gymkana · práctico</span><span class="gt" style="display:block">${esc(x.titulo)}</span>
+      <span class="gs" style="display:block">${fmtN(x.tarjetas)} estaciones · ${fmtN(x.tarjetas - x.extras)} esenciales y ${fmtN(x.extras)} extras · ${esc(x.periodo)}</span></span>
+      <span class="gf" aria-hidden="true">→</span></button>`
+    : `<a class="gk" href="${esc(x.url)}"><span class="gi"><span class="gr">Test · teórico</span><span class="gt" style="display:block">${esc(x.titulo)}</span>
+      <span class="gs" style="display:block">${fmtN(x.preguntas)} preguntas · ${esc(x.detalle || '')}${x.periodo ? ' · ' + esc(x.periodo) : ''}</span></span>
+      <span class="gf" aria-hidden="true">→</span></a>`;
+  const i = infoRamo(r);
+  $('#app').innerHTML = `<div class="wrap portada">
+    <a class="volver" href="#">← Todos los ramos</a>
+    <p class="kicker">${esc(r)}</p>
+    <h1>${esc(i.corto)}</h1>
+    ${i.lema ? `<p class="lead">${esc(i.lema)}.</p>` : ''}
+    <div class="lista">${items.filter(x => x.ramo === r).sort((a, b) => (a.tipo === b.tipo ? 0 : a.tipo === 'gymkana' ? -1 : 1)).map(tarjeta).join('')}</div>
+    ${PIE_SITIO}
+  </div>`;
+  document.querySelectorAll('.gk[data-id]').forEach(b => (b.onclick = () => irA(b.dataset.id)));
 }
 
 /* ---------------------------------------------------------------- filtros */
@@ -339,6 +388,7 @@ function portada() {
   const pill = (attr, val, txt, n, on) => `<label class="pill" data-on="${on ? 1 : 0}"><input type="checkbox" data-${attr}="${val}" ${on ? 'checked' : ''}>${txt}<small>${fmtN(n)}</small></label>`;
 
   $('#app').innerHTML = `<div class="wrap portada">
+    <a class="volver" href="#ramo-${infoRamo(G.meta.ramo).slug}">← ${esc(infoRamo(G.meta.ramo).corto)}</a>
     <p class="kicker">${esc(G.meta.ramo)} · ${esc(G.meta.periodo || '')}</p>
     <h1>${esc(G.meta.titulo)}</h1>
     <p class="lead">${fmtN(G.cartas.length)} estaciones con ${esc(G.meta.imagenes || "fotos de preparados")}. Elige qué estudiar y en qué modo.</p>
@@ -584,14 +634,19 @@ const CLAVES = new Set(['intern', 'extern', 'superior', 'inferior', 'anterior', 
   'menor', 'superficial', 'profund', 'derech', 'izquierd', 'ascendent', 'descendent', 'transvers', 'oblicu', 'rect',
   'proximal', 'distal', 'comun', 'medi', 'central', 'principal', 'accesori', 'primer', 'segund', 'tercer', 'cuart',
   'median', 'propi', 'larg', 'cort', 'grand', 'pequen', 'alt', 'baj', 'vertical', 'horizontal', 'supraorbitari',
-  'infraorbitari', 'supratroclear', 'infratroclear']);
+  'infraorbitari', 'supratroclear', 'infratroclear',
+  // embriología: pares que se confunden con una letra de diferencia (mesonefros/metanefros, ectodermo/endodermo…)
+  'pronefr', 'mesonefr', 'metanefr', 'paramesonefr', 'mesonefric', 'paramesonefric', 'ectoderm', 'endoderm',
+  'mesoderm', 'somatic', 'esplacnic', 'citotrofoblast', 'sinciciotrofoblast', 'basal', 'capsular', 'parietal',
+  'dorsal', 'ventral', 'craneal', 'caudal', 'primari', 'secundari', 'terciari', 'masculin', 'femenin']);
 const raiz = w => w.replace(/(os|as|o|a|es|e)$/, '');
 function normalizar(s) {
   const t = s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/\b(mm|aa|nn|vv|lig|gl|art|m|a|n|v|r)\.\s*/g, (_, x) => ABREV[x] + ' ')
     .replace(/[^a-z0-9]+/g, ' ').trim().split(' ').filter(Boolean);
   // «m recto lateral», «n facial»: abreviatura sin punto al comienzo
-  if (t.length > 1 && ABREV[t[0]]) t[0] = ABREV[t[0]];
+  // (la «a» sola no: «a nivel renal» no es «arteria nivel renal»)
+  if (t.length > 1 && ABREV[t[0]] && t[0] !== 'a') t[0] = ABREV[t[0]];
   return t.filter(w => !VACIAS.has(w));
 }
 const esClave = w => CLAVES.has(w) || CLAVES.has(raiz(w));

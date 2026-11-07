@@ -31,12 +31,13 @@
     "periodo": "Segundo semestre 2026",
     "fuente": "trabajo/2° Semestre/🔬 Histología y embriología/Certamen 2/Gymkana de embriología",
     "nombre_grupos": "Trabajos prácticos y preparados",
-    "imagenes": "cortes al microscopio de los TP 9 y 10 y de la microscopía virtual del curso",
+    "imagenes": "cortes al microscopio de los TP 9 y 10, de la microscopía virtual del curso y de prácticos de años anteriores",
     "marca": "la imagen con la estructura tapada en rojo",
     "nota_extras": "Extras: lo que en tus mazos de Anki está en el submazo «Extras» (lo que viene solo de los libros).",
     "semanas": {
       "TP 9": "Embriología de sistemas I",
-      "TP 10": "Desarrollo urogenital y malformaciones"
+      "TP 10": "Desarrollo urogenital y malformaciones",
+      "Prácticos anteriores": "Placas de prácticos de años anteriores"
     },
     "regiones": {
       "TP 9:preparado1": "1 · Mesodermo del embrión trilaminar",
@@ -50,7 +51,10 @@
       "TP 9:prefetal": "Período prefetal",
       "TP 10:observacion4": "Observación 4 · Embrión de 7 semanas",
       "TP 10:preparado5": "5 · Metanefros y suprarrenal fetal",
-      "TP 10:preparado6": "6 · Gónada indiferenciada"
+      "TP 10:preparado6": "6 · Gónada indiferenciada",
+      "Prácticos anteriores:testiculo": "Testículo fetal",
+      "Prácticos anteriores:ovario": "Ovario fetal",
+      "Prácticos anteriores:genitales": "Genitales externos"
     }
   }
 }

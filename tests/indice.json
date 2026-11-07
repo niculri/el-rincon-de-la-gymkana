@@ -1,0 +1,11 @@
+[
+ {
+  "id": "histo-c2",
+  "titulo": "Test de embriología del Certamen 2",
+  "ramo": "Histología y embriología",
+  "periodo": "Segundo semestre 2026",
+  "url": "tests/histo-c2/",
+  "preguntas": 512,
+  "detalle": "203 de certámenes anteriores, 113 de guías PAD y 196 nuevas, en tres niveles"
+ }
+]
